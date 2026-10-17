@@ -395,20 +395,25 @@ with tab_match:
             "CS + Data Science senior. Python, PyTorch, scikit-learn, SQL. Built an NLP pipeline over "
             "95k job posts, time-series forecasting with conformal intervals. Looking for ML engineer "
             "or data scientist roles, remote or NYC."))
+        PAGE_SIZE = 20
+        QUALITY = {"Any": 0.0, "Top 50%": 0.5, "Top 25%": 0.75, "Top 10%": 0.9}
         c0, c1, c2, c3 = st.columns(4)
         within = c0.selectbox("Posted within", list(range(1, n_months + 1)), index=min(1, n_months - 1),
                               format_func=lambda m: "this month's thread" if m == 1 else f"last {m} months")
-        remote_only = c1.checkbox("Remote-friendly only")
-        salary_only = c2.checkbox("Lists a salary only")
-        k = c3.slider("Results", 5, 30, 12)
+        quality = c1.selectbox("Match quality", list(QUALITY),
+                               help="Keep only matches scoring in the top share of all current posts.")
+        show = c2.selectbox("Show", [25, 50, 100, "All"], index=0)
+        remote_only = c3.checkbox("Remote-friendly only")
+        salary_only = c3.checkbox("Lists a salary only")
 
-        if text.strip():
+        # A function so early exits can `return`: st.stop() would also blank the Methods tab.
+        def render_matches() -> None:
             try:
                 m = model()
             except Exception as exc:  # sentence-transformers not installed
                 st.error(f"The embedding model isn't available here ({exc}). "
                          "Install the `embed` extra: `pip install -e .[embed]`.")
-                st.stop()
+                return
             from radar.embed import encode
             from radar.parse import strip_urls
             from radar.skills import extract_skills
@@ -425,14 +430,16 @@ with tab_match:
             pool = (pool.assign(_co=pool["company"].str.lower().str.strip())
                         .sort_values(["month", "score"], ascending=False)
                         .drop_duplicates("_co"))
-            res = pool
+            # Quality is relative to the whole current pool, so "Top 10%" means the same
+            # thing whatever the absolute similarity scale of a given resume is.
+            res = pool[pool["score"] >= pool["score"].quantile(QUALITY[quality])]
             if remote_only:
                 res = res[res["work_mode"] == "remote"]
             if salary_only:
                 res = res[res["salary_low"].notna()]
-            res = res.nlargest(k, "score")
-            if res.empty:
-                st.info("No posts match those filters. Try a longer window or fewer filters.")
+            res = res.sort_values("score", ascending=False)
+            if show != "All":
+                res = res.head(show)
 
             mine = set(extract_skills(strip_urls(text)))
             top50 = pool.nlargest(50, "score")
@@ -444,7 +451,22 @@ with tab_match:
                 st.write("**Common in your 50 closest matches but missing from your text:** "
                          + ", ".join(f"{s} ({demand[s]})" for s in gaps))
 
-            for r in res.itertuples():
+            if res.empty:
+                st.info("No posts match those filters. Try a longer window, lower match quality or fewer filters.")
+                return
+            n_pages = -(-len(res) // PAGE_SIZE)
+            # Back to page 1 whenever the query or any filter changes.
+            sig = (hash(text), within, quality, show, remote_only, salary_only)
+            if st.session_state.get("match_sig") != sig or st.session_state.get("match_page", 1) > n_pages:
+                st.session_state["match_sig"] = sig
+                st.session_state["match_page"] = 1
+            hc1, hc2 = st.columns([3, 1])
+            hc1.markdown(f"**{len(res)} matching companies** (of {len(pool)} posting in this window)")
+            page = hc2.selectbox(
+                "Page", list(range(1, n_pages + 1)), key="match_page", label_visibility="collapsed",
+                format_func=lambda p: f"{(p - 1) * PAGE_SIZE + 1}–{min(p * PAGE_SIZE, len(res))} of {len(res)}")
+
+            for r in res.iloc[(page - 1) * PAGE_SIZE: page * PAGE_SIZE].itertuples():
                 sal = ""
                 if pd.notna(r.salary_low):
                     sal = f" · {r.salary_currency} {r.salary_low / 1000:.0f}k–{r.salary_high / 1000:.0f}k"
@@ -454,6 +476,9 @@ with tab_match:
                     f"<span style='color:#64748b'>{r.month:%b %Y} · {r.work_mode} · match {r.score:.2f}{sal}"
                     f"{' · shared skills: ' + ', '.join(overlap) if overlap else ''}</span>",
                     unsafe_allow_html=True)
+
+        if text.strip():
+            render_matches()
 
 # ========================================================================== METHODS
 with tab_methods:
