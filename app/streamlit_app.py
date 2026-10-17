@@ -29,6 +29,7 @@ EVENTS = [
     ("2022-11-01", "ChatGPT"),
 ]
 HN_ITEM = "https://news.ycombinator.com/item?id={}"
+REPO_URL = "https://github.com/aeshetu/job-market-radar"
 
 
 # ----------------------------------------------------------------------------- data
@@ -81,11 +82,12 @@ st.title("📡 Job Market Radar")
 st.markdown(
     f"**{int(market['posts'].sum()):,} job posts** from every Hacker News *“Who is hiring?”* thread, "
     f"{market['month'].min():%B %Y} – {latest:%B %Y}, mined for skills, salaries, remote policy and "
-    "industry. Every number below is computed from the raw posts by an open, tested pipeline."
+    "industry. Every number below is computed from the raw posts by an open, tested pipeline.  \n"
+    f"[Source code & full methodology →]({REPO_URL})"
 )
 
-tab_market, tab_skills, tab_ind, tab_sal, tab_match, tab_methods = st.tabs(
-    ["Market", "Skills", "Industries", "Salaries", "Resume match", "Methods"])
+tab_market, tab_skills, tab_ind, tab_sal, tab_match = st.tabs(
+    ["Market", "Skills", "Industries", "Salaries", "Resume match"])
 
 # =========================================================================== MARKET
 with tab_market:
@@ -193,7 +195,7 @@ with tab_skills:
             "Share of posts mentioning each skill (3-month pooled). Dashed: 12-month forecast with an "
             f"80% conformal interval. In a held-out backtest (2023+) the selected model "
             f"(`{fm['selected_model']}`) beat a naive forecast by {fm['test_improvement_vs_naive']:.0%} "
-            f"and the intervals covered {cov:.0%} of outcomes. See *Methods*.")
+            f"and the intervals covered {cov:.0%} of outcomes. See *How this works* below.")
 
     st.subheader("Biggest movers")
     movers = load("skill_movers")
@@ -406,7 +408,7 @@ with tab_match:
         remote_only = c3.checkbox("Remote-friendly only")
         salary_only = c3.checkbox("Lists a salary only")
 
-        # A function so early exits can `return`: st.stop() would also blank the Methods tab.
+        # A function so early exits can `return`: st.stop() would also skip the footer below.
         def render_matches() -> None:
             try:
                 m = model()
@@ -480,45 +482,18 @@ with tab_match:
         if text.strip():
             render_matches()
 
-# ========================================================================== METHODS
-with tab_methods:
-    fm = load_json("forecast_metrics")
-    sm_ = load_json("salary_metrics")
-    cmx = load_json("cluster_metrics")
+# =========================================================================== FOOTER
+st.divider()
+with st.expander("How this works"):
     st.markdown(f"""
-### Pipeline
-1. **Ingest:** every monthly *Ask HN: Who is hiring?* thread from the HN Algolia API. Missing or
-   near-empty months (posted by stand-in accounts) are recovered by title search. Each top-level
-   comment is one post.
-2. **Extract:** tested, rule-based parsers for ~90 skills, salary ranges (currency, k-suffixes, EU
-   number formats; rejects hourly rates, funding rounds, MRR), remote/hybrid/onsite, visa sponsorship,
-   seniority, role titles and metro. Ambiguous terms (*Go*, *C*, *R*, *React*, *Spark*) have explicit
-   negative test cases, and samples of matches were read by hand to check precision.
-3. **Trends:** monthly shares with Wilson intervals; movers via two-proportion z-tests with
-   Benjamini–Hochberg FDR control; crossovers on trailing 12-month shares.
-4. **Forecasts:** rolling-origin backtest of 5 models across {fm.get('n_series', '–')} skills. The model is
-   selected on pre-2023 origins and scored on untouched 2023+ origins.
-5. **Embeddings & clusters:** `all-MiniLM-L6-v2` on CPU over the post body (the metadata header is
-   dropped; with it, clusters formed around location and formatting). Embeddings are **centered** to remove
-   the shared "this is a job ad" direction, then clustered with k-means (k = {cmx.get('k', '–')}). Names come
-   zero-shot from the nearest industry description above a similarity threshold, next to company-deduplicated
-   c-TF-IDF keywords and a UMAP map.
-6. **Salaries:** OLS with company-clustered SEs for interpretation; ridge, gradient boosting and
-   text-embedding ridge for prediction, under company-grouped CV and a temporal holdout.
+Every monthly Hacker News *“Who is hiring?”* thread is downloaded, and each post is parsed with
+tested rules for skills, salaries, remote policy, seniority and location. Trends are checked with
+statistical tests corrected for comparing ~90 skills at once. Forecasts and salary models are scored
+only on data they never saw (later years, and companies held out). Industries come from clustering
+sentence embeddings of the post text.
 
-### Forecast intervals: a regime-shift story
-Conformal intervals calibrated on 2019–22 covered only
-**{fm.get('interval_test_coverage', {}).get('static_pooled', 0):.0%}** of 2023+ outcomes (target 80%).
-The AI boom broke the exchangeability that conformal guarantees rely on. Recalibrating on a sliding
-window and normalizing each skill's errors by its own volatility restored coverage to
-**{fm.get('interval_test_coverage', {}).get('normalized_sliding (shipped)', 0):.0%}**. Caveat: the
-window length was chosen from four candidates on the test period.
+**Limitations:** Hacker News skews toward startups and engineering roles, so this isn't the whole job
+market. Shares count what companies *write*, not how many people they hire.
 
-### Limitations
-* HN skews toward startups, SF/NYC and engineering roles, so this is not the whole labor market.
-* Shares measure what companies *write*, not headcount, and one post can cover many openings.
-* Advertised salary ranges are not offers, and disclosure itself changed over time with pay-transparency laws.
-* Rule-based extraction trades recall for precision; unusual phrasings are missed.
+[Full methodology, validation results and code on GitHub →]({REPO_URL})
 """)
-    with st.expander("Raw metrics"):
-        st.json({"forecast": fm, "salary": sm_, "clusters": cmx})

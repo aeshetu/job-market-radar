@@ -15,4 +15,5 @@ def test_dashboard_renders():
     at = AppTest.from_file(str(APP), default_timeout=120).run()
     assert not at.exception, [e.value for e in at.exception]
     assert at.title[0].value.startswith("📡 Job Market Radar")
-    assert len(at.tabs) == 6
+    assert len(at.tabs) == 5
+    assert any(e.label == "How this works" for e in at.expander)
