@@ -1,0 +1,45 @@
+name: Monthly data refresh
+
+# The new "Who is hiring?" thread goes up on the 1st; give it a few days to fill.
+on:
+  schedule:
+    - cron: "0 12 5 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install --extra-index-url https://download.pytorch.org/whl/cpu -e ".[embed,dev]"
+      - run: pytest -q
+
+      # Raw threads and embeddings are cached between runs, so a refresh only
+      # downloads and embeds what's new.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            data/raw
+            data/interim/embeddings.npz
+          key: radar-data-${{ github.run_id }}
+          restore-keys: radar-data-
+
+      - run: python -m radar.pipeline
+        env:
+          TQDM_DISABLE: "1"
+
+      - name: Commit updated tables
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898333+github-actions[bot]@users.noreply.github.com"
+          git add data/processed
+          git diff --cached --quiet || git commit -m "Data refresh $(date -u +%Y-%m)"
+          git push

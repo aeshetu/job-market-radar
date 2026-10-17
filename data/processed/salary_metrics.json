@@ -1,0 +1,84 @@
+{
+  "n_posts": 4521,
+  "n_companies": 1813,
+  "n_features": 73,
+  "years": [
+    2016,
+    2026
+  ],
+  "group_kfold_by_company": {
+    "baseline": {
+      "mae_usd": 29850,
+      "median_ape": 0.1369,
+      "r2_log": 0.1697
+    },
+    "ridge": {
+      "mae_usd": 29707,
+      "median_ape": 0.1476,
+      "r2_log": 0.2397
+    },
+    "gbm": {
+      "mae_usd": 31263,
+      "median_ape": 0.1573,
+      "r2_log": 0.1573
+    }
+  },
+  "temporal_train_le_2024_test_2025plus": {
+    "n_test": 1260,
+    "baseline": {
+      "mae_usd": 36227,
+      "median_ape": 0.1579,
+      "r2_log": -0.0145
+    },
+    "ridge": {
+      "mae_usd": 32752,
+      "median_ape": 0.1345,
+      "r2_log": 0.1103
+    },
+    "gbm": {
+      "mae_usd": 33499,
+      "median_ape": 0.1422,
+      "r2_log": 0.1107
+    }
+  },
+  "ols_r2_in_sample": 0.3312,
+  "ridge_with_text_embeddings": {
+    "text_only": {
+      "group_kfold_by_company": {
+        "mae_usd": 29377,
+        "median_ape": 0.1453,
+        "r2_log": 0.2504
+      },
+      "temporal_train_le_2024_test_2025plus": {
+        "mae_usd": 33705,
+        "median_ape": 0.1402,
+        "r2_log": 0.0548
+      }
+    },
+    "features_plus_raw_text": {
+      "group_kfold_by_company": {
+        "mae_usd": 32195,
+        "median_ape": 0.1658,
+        "r2_log": 0.1645
+      },
+      "temporal_train_le_2024_test_2025plus": {
+        "mae_usd": 38644,
+        "median_ape": 0.1682,
+        "r2_log": -0.0337
+      }
+    },
+    "features_plus_text": {
+      "group_kfold_by_company": {
+        "mae_usd": 29156,
+        "median_ape": 0.1429,
+        "r2_log": 0.2727
+      },
+      "temporal_train_le_2024_test_2025plus": {
+        "mae_usd": 33521,
+        "median_ape": 0.1382,
+        "r2_log": 0.1071
+      }
+    },
+    "text_pca_components": 32
+  }
+}

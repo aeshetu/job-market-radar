@@ -1,0 +1,10 @@
+# Runtime dependencies for the dashboard (used by Streamlit Community Cloud).
+# The full pipeline: pip install -e ".[embed,dev]"
+--extra-index-url https://download.pytorch.org/whl/cpu
+pandas>=2.0
+numpy>=1.24
+pyarrow>=14
+plotly>=5.18
+streamlit>=1.30
+torch>=2.1
+sentence-transformers>=3.0

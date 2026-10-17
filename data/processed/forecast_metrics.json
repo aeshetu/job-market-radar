@@ -1,0 +1,88 @@
+{
+  "protocol": "rolling origin every 6 months; select model on origins < 2023-01, report on origins >= 2023-01",
+  "n_series": 54,
+  "n_origins_calib": 8,
+  "n_origins_test": 6,
+  "horizon_months": 12,
+  "mae_pp_calib": {
+    "naive": 0.9248,
+    "mean6": 0.8523,
+    "ets": 0.9319,
+    "ets_s3": 0.9721,
+    "ens": 0.8775
+  },
+  "mae_pp_test": {
+    "naive": 1.3473,
+    "mean6": 1.2769,
+    "ets": 1.2377,
+    "ets_s3": 1.515,
+    "ens": 1.3472
+  },
+  "selected_model": "mean6",
+  "test_improvement_vs_naive": 0.0523,
+  "mae_pp_test_by_horizon": {
+    "mean6": [
+      0.942,
+      1.005,
+      1.088,
+      1.066,
+      1.257,
+      1.261,
+      1.344,
+      1.312,
+      1.374,
+      1.445,
+      1.596,
+      1.634
+    ],
+    "naive": [
+      0.94,
+      1.121,
+      1.209,
+      1.223,
+      1.331,
+      1.272,
+      1.47,
+      1.372,
+      1.475,
+      1.498,
+      1.62,
+      1.637
+    ],
+    "ets": [
+      0.867,
+      0.983,
+      1.106,
+      1.059,
+      1.184,
+      1.172,
+      1.271,
+      1.274,
+      1.366,
+      1.361,
+      1.58,
+      1.628
+    ]
+  },
+  "interval_nominal_coverage": 0.8,
+  "interval_test_coverage": {
+    "static_pooled": 0.5885,
+    "expanding_pooled": 0.6368,
+    "normalized_sliding (shipped)": 0.7914
+  },
+  "interval_test_coverage_by_horizon": [
+    0.741,
+    0.775,
+    0.79,
+    0.79,
+    0.781,
+    0.781,
+    0.759,
+    0.809,
+    0.821,
+    0.83,
+    0.815,
+    0.806
+  ],
+  "calibration_window_months": 36
+}
