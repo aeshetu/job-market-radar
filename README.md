@@ -6,7 +6,7 @@ An end-to-end data science / ML project: API ingestion → tested NLP extraction
 analysis → forecasting with calibrated uncertainty → sentence-embedding clustering → salary modeling →
 an interactive Streamlit dashboard that refreshes itself every month via GitHub Actions.
 
-> **Live dashboard:** _add your Streamlit Cloud URL here_
+> **Live dashboard: [job-market-radar.streamlit.app](https://job-market-radar.streamlit.app/)**
 
 ---
 
