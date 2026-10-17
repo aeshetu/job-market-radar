@@ -65,8 +65,9 @@ guarantees. Fixes, evaluated on held-out origins:
 - Result: 13 clean industry clusters with name-match similarity ≥ 0.52, and 11 stack/format clusters at ≤ 0.41. These are labelled *General: \<keywords\>* instead of being forced into an industry, with the 0.5 threshold sitting in the empty gap.
 - Silhouette is flat (0.022–0.025) for k = 12–32, as usual for text embeddings, so k = 24 was chosen for granularity.
 
-**7. Resume matcher.** Paste a resume, and semantic search returns the closest posts from the last 12
-months, plus the skills that are common in those matches but missing from your text.
+**7. Resume matcher.** Paste a resume, and semantic search returns the closest *current* posts (last 1–3
+months, since older HN roles are usually filled), one per company, plus the skills that are common in
+those matches but missing from your text.
 
 ---
 

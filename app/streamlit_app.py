@@ -385,14 +385,19 @@ with tab_match:
         def match_matrix() -> np.ndarray:
             return np.load(PROCESSED / "match_embeddings.npy").astype(np.float32)
 
+        newest = mp["month"].max()
+        n_months = mp["month"].nunique()
         st.markdown(f"Paste your resume or a short description of what you want. It's compared "
-                    f"semantically against the **{len(mp):,} posts from the last 12 months**. "
-                    "Nothing is stored.")
+                    f"semantically against the **{len(mp):,} posts from the last {n_months} months** "
+                    f"({mp['month'].min():%b}–{newest:%b %Y}). Older posts aren't included because those "
+                    "roles are usually filled. Nothing you paste is stored.")
         text = st.text_area("Resume / profile", height=180, placeholder=(
             "CS + Data Science senior. Python, PyTorch, scikit-learn, SQL. Built an NLP pipeline over "
             "95k job posts, time-series forecasting with conformal intervals. Looking for ML engineer "
             "or data scientist roles, remote or NYC."))
-        c1, c2, c3 = st.columns(3)
+        c0, c1, c2, c3 = st.columns(4)
+        within = c0.selectbox("Posted within", list(range(1, n_months + 1)), index=min(1, n_months - 1),
+                              format_func=lambda m: "this month's thread" if m == 1 else f"last {m} months")
         remote_only = c1.checkbox("Remote-friendly only")
         salary_only = c2.checkbox("Lists a salary only")
         k = c3.slider("Results", 5, 30, 12)
@@ -413,15 +418,24 @@ with tab_match:
             q = encode(m, chunks).mean(axis=0)
             q /= np.linalg.norm(q)
             sims = match_matrix() @ q
-            res = mp.assign(score=sims)
+            cutoff = newest - pd.DateOffset(months=within - 1)
+            pool = mp.assign(score=sims)
+            pool = pool[pool["month"] >= cutoff]
+            # Companies repost monthly: keep each company's most recent post only.
+            pool = (pool.assign(_co=pool["company"].str.lower().str.strip())
+                        .sort_values(["month", "score"], ascending=False)
+                        .drop_duplicates("_co"))
+            res = pool
             if remote_only:
                 res = res[res["work_mode"] == "remote"]
             if salary_only:
                 res = res[res["salary_low"].notna()]
             res = res.nlargest(k, "score")
+            if res.empty:
+                st.info("No posts match those filters. Try a longer window or fewer filters.")
 
             mine = set(extract_skills(strip_urls(text)))
-            top50 = mp.assign(score=sims).nlargest(50, "score")
+            top50 = pool.nlargest(50, "score")
             demand = top50["skills"].explode().value_counts()
             gaps = [s for s in demand.index if s not in mine and demand[s] >= 5][:8]
             if mine:

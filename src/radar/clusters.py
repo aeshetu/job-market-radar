@@ -29,7 +29,7 @@ K = 24
 K_GRID = (12, 16, 20, 24, 28, 32)
 NAME_THRESHOLD = 0.5  # cosine; below this a centroid isn't close to any industry description
 MAP_SAMPLE = 12_000
-MATCH_MONTHS = 12
+MATCH_MONTHS = 3  # HN jobs are usually filled or reposted within a couple of months
 
 DOMAINS = {
     "Fintech & payments": "a fintech company building payments, banking, lending or financial software",
